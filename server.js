@@ -46,37 +46,73 @@ app.get("/", (req, res) => {});
 //Login
 
 app.post("/signin", (req, res) => {
-    database.users.forEach(user => {
-        if (req.body.email === user.email) {
-            return res.json(user);
-        }
-    });
+    const { email, password } = req.body;
+    const hash = bcrypt.hashSync(password);
+
+    db.select("email", "hash")
+        .from("login")
+        .where("email", email)
+        .then(data => {
+            if (data.length) {
+                const isValid = bcrypt.compareSync(password, data[0].hash);
+                if (isValid) {
+                    return db
+                        .select("*")
+                        .from("users")
+                        .where("email", email)
+                        .then(data => res.json(data[0]))
+                        .catch(err => res.status(404).json("Error!"));
+                } else {
+                    res.status(300).json("Bad creditinals");
+                }
+            } else {
+                res.status(404).json("Error!");
+            }
+        })
+        .catch(err => res.status(300).json("Bad creditinals"));
 });
 
 app.post("/register", (req, res) => {
     const { email, password, name } = req.body;
-    db("users")
-        .returning("*")
-        .insert({
-            email: email,
-            name: name,
-            joined: new Date()
+    const hash = bcrypt.hashSync(password);
+
+    db.transaction(trx => {
+        trx.insert({
+            hash: hash,
+            email: email
         })
-        .then(user => res.json(user[0]))
-        .catch(err => res.status(400).json("Unable to register"));
+            .into("login")
+            .returning("email")
+            .then(loginEmail => {
+                return trx("users")
+                    .returning("*")
+                    .insert({
+                        email: loginEmail[0],
+                        name: name,
+                        joined: new Date()
+                    })
+                    .then(user => res.json(user[0]))
+                    .catch(err => res.status(400).json("Unable to register"));
+            })
+            .then(trx.commit)
+            .catch(trx.rollback);
+    });
 });
 
 app.put("/image", (req, res) => {
     const { id } = req.body;
-    let found = false;
-    database.users.forEach(user => {
-        if (user.id === id) {
-            found = true;
-            user.entries++;
-            return res.json(user.entries);
-        }
-    });
-    if (!found) return res.status(400).json("Not found");
+
+    db("users")
+        .where("id", "=", id)
+        .increment("entries", 1)
+        .returning("entries")
+        .then(entries => {
+            if (entries.length) res.json(entries[0]);
+            else res.status(400).json("Bad request");
+        })
+        .catch(err => {
+            res.status(400).json(err);
+        });
 });
 
 app.get("/profile/:id", (req, res) => {
