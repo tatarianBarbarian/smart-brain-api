@@ -29,20 +29,10 @@ app.listen(3000, () => {
 
 app.get("/", (req, res) => {});
 
-//Login
+app.post("/signin", signIn.handleSignIn(bcrypt, db));
 
-app.post("/signin", (req, res) => {
-    signIn.handleSignIn(req, res, bcrypt, db);
-});
+app.post("/register", register.handleRegister(bcrypt, db));
 
-app.post("/register", (req, res) => {
-    register.handleRegister(req, res, bcrypt, db);
-});
+app.put("/image", image.handleImageGet(bcrypt, db));
 
-app.put("/image", (req, res) => {
-    image.handleImageGet(req, res, bcrypt, db);
-});
-
-app.get("/profile/:id", (req, res) => {
-    profile.handleProfileGet(req, res, bcrypt, db);
-});
+app.get("/profile/:id", profile.handleProfileGet(db));

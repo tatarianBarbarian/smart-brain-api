@@ -1,4 +1,4 @@
-const handleImageGet = (req, res, bcrypt, db) => {
+const handleImageGet = (bcrypt, db) => (req, res) => {
     const { id } = req.body;
 
     db("users")
