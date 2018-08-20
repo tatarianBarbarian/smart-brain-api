@@ -27,7 +27,9 @@ app.listen(process.env.PORT || 3000, () => {
     console.log(`App is running on the port ${process.env.PORT}`);
 });
 
-app.get("/", (req, res) => {});
+app.get("/", (req, res) => {
+    res.send("It's all working!");
+});
 
 app.post("/signin", signIn.handleSignIn(bcrypt, db));
 
